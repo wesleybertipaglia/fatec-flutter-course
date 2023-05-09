@@ -13,10 +13,12 @@ class MyApp extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Q&A'),
         ),
-        body: Container(
-          margin: const EdgeInsets.all(24),
-          child: Column(children: [
+        body: ListView(
+          padding: const EdgeInsets.all(8),
+          children: [
             const TextField(
+              maxLines: 5,
+              minLines: 3,
               decoration: InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'Faça sua pergunta',
@@ -30,8 +32,8 @@ class MyApp extends StatelessWidget {
                 child: const Text("Enviar")
               ),
               ),
-              Column(
-                children: const [
+              const Column(
+                children: [
                   Card(
                     child: ListTile(
                       title: Text("Pergunta 1"),
@@ -49,7 +51,7 @@ class MyApp extends StatelessWidget {
                   ),
                 ],
               ),
-          ]),
+          ],
         ),
       ),
     );
