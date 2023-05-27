@@ -6,7 +6,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 const firebaseOptions = FirebaseOptions(
-  // key
+  apiKey: "AIzaSyCzfT4ZuCSbOYpjs5hbG7UbXQm6WZfsyBQ",
+  authDomain: "qea-app.firebaseapp.com",
+  projectId: "qea-app",
+  storageBucket: "qea-app.appspot.com",
+  messagingSenderId: "700844108706",
+  appId: "1:700844108706:web:85f91c4035d353f9cd60fb"
 );
 
 void main() async {
@@ -52,10 +57,11 @@ class QuestionPage extends StatelessWidget {
       body: Container(
         margin: EdgeInsets.all(10),
         child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: firestore.collection('questions')
-          // .orderBy('likes', descending: false)
-          .orderBy('data', descending: false)
-          .snapshots(),
+          stream: firestore
+            .collection('questions')
+            .orderBy('likesCount', descending: true)
+            .orderBy('date', descending: false)
+            .snapshots(),
           builder: (_, snapshot) {
             if (!snapshot.hasData) {
               return Center(
@@ -94,7 +100,8 @@ class QuestionPage extends StatelessWidget {
                                 'question': txtQuestion.text,
                                 'uid': auth.currentUser!.uid,
                                 'likes': [],
-                                'data': DateTime.now(),
+                                'likesCount': 0,
+                                'date': DateTime.now(),
                               });
                               txtQuestion.clear();
                             },
@@ -129,9 +136,17 @@ class QuestionPage extends StatelessWidget {
                           child: Row(
                             children: [
                               IconButton(
-                                onPressed: () {
-                                  doc.reference.update({
+                                onPressed: () async {
+                                  await doc.reference.update({
                                     'likes': FieldValue.arrayUnion([auth.currentUser!.uid]),
+                                  });
+
+                                  // Recarrega o documento após a atualização dos likes
+                                  var updatedDoc = await doc.reference.get();
+
+                                  // Atualiza o valor de 'likesCount' com o tamanho da lista atualizada de likes
+                                  doc.reference.update({
+                                    'likesCount': updatedDoc['likes'].length,
                                   });
                                 },
                                 icon: Icon(Icons.thumb_up),
