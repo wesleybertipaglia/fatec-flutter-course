@@ -6,12 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 const firebaseOptions = FirebaseOptions(
-  apiKey: "AIzaSyCzfT4ZuCSbOYpjs5hbG7UbXQm6WZfsyBQ",
-  authDomain: "qea-app.firebaseapp.com",
-  projectId: "qea-app",
-  storageBucket: "qea-app.appspot.com",
-  messagingSenderId: "700844108706",
-  appId: "1:700844108706:web:85f91c4035d353f9cd60fb"
+  // key
 );
 
 void main() async {
