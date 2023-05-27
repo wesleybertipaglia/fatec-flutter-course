@@ -1,57 +1,153 @@
+// ignore_for_file: prefer_const_constructors, use_key_in_widget_constructors
+
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-void main() => runApp(const MyApp());
+const firebaseOptions = FirebaseOptions(
+  // key
+);
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: firebaseOptions);
+  runApp(QuestionsApp());
+}
+
+class QuestionsApp extends StatelessWidget {
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  
+  @override
+  Widget build(BuildContext context) {
+    if(auth.currentUser == null) {
+      auth.signInAnonymously();
+    }
+    
+    return MaterialApp(
+      theme: ThemeData.light(),
+      debugShowCheckedModeBanner: false,
+      home: QuestionPage(),
+    );
+  }
+}
+
+class QuestionPage extends StatelessWidget {
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  final txtQuestion = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Q&A',
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Q&A'),
-        ),
-        body: ListView(
-          padding: const EdgeInsets.all(8),
-          children: [
-            const TextField(
-              maxLines: 5,
-              minLines: 3,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Faça sua pergunta',
-              ),
-            ),
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.fromLTRB(0, 16, 0, 16),
-              child: ElevatedButton(
-                onPressed: () {}, 
-                child: const Text("Enviar")
-              ),
-              ),
-              const Column(
-                children: [
-                  Card(
-                    child: ListTile(
-                      title: Text("Pergunta 1"),
-                    ),
-                  ),
-                  Card(
-                    child: ListTile(
-                      title: Text("Pergunta 2"),
-                    ),
-                  ),
-                  Card(
-                    child: ListTile(
-                      title: Text("Pergunta 3"),
-                    ),
-                  ),
-                ],
-              ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: const [
+            Text("Q&A"),
+            Text("CODE: CODIGO"),
           ],
+        ),
+      ),
+      body: Container(
+        margin: EdgeInsets.all(10),
+        child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: firestore.collection('questions')
+          // .orderBy('likes', descending: false)
+          .orderBy('data', descending: false)
+          .snapshots(),
+          builder: (_, snapshot) {
+            if (!snapshot.hasData) {
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+
+            List<Widget> itens = [];
+
+            itens.add(
+              Card(
+                // elevation: 4,
+                child: Container(
+                  margin: const EdgeInsets.all(10),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: txtQuestion,
+                        maxLines: 8,
+                        minLines: 4,
+                        decoration: InputDecoration(
+                          hintText: "Faça sua question...",
+                          border: InputBorder.none,
+                        ),
+                        autofocus: true,
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Enviar como anônimo",
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.grey)),
+                          ElevatedButton(
+                            onPressed: () async {
+                              await firestore.collection('questions').add({
+                                'question': txtQuestion.text,
+                                'uid': auth.currentUser!.uid,
+                                'likes': [],
+                                'data': DateTime.now(),
+                              });
+                              txtQuestion.clear();
+                            },
+                            child: Text("Enviar"),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+
+            itens.add(
+              SizedBox(
+                height: 10,
+              ),
+            );
+
+            var docs = snapshot.data!.docs;
+
+            itens.addAll(docs
+                .map((doc) => Card(
+                      // elevation: 6,
+                      child: ListTile(
+                        contentPadding: EdgeInsets.fromLTRB(16, 4, 16, 10),
+                        leading: CircleAvatar(child: Text("A")),
+                        title: Text("Anonymous"),
+                        subtitle: Text(doc['question']),                            
+                        trailing: SizedBox(
+                          width: 60,
+                          child: Row(
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  doc.reference.update({
+                                    'likes': FieldValue.arrayUnion([auth.currentUser!.uid]),
+                                  });
+                                },
+                                icon: Icon(Icons.thumb_up),
+                              ),
+                              Text(doc['likes'].length.toString()),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ))
+                .toList());
+
+            return ListView(
+              children: itens,
+            );
+          },
         ),
       ),
     );
